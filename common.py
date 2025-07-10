@@ -2,6 +2,8 @@ import os
 import re
 import uuid
 import shutil
+from PIL import Image
+from PIL.ExifTags import TAGS
 from datetime import datetime
 from pathlib import Path
 
@@ -12,10 +14,40 @@ def sanitize_filename(name, replacement="_"):
     invalid_chars = r'[<>:"/\\|?* ]'
     return re.sub(invalid_chars, replacement, name)
 
-def get_file_creation(path): # WINDOWS ONLY
-    timestamp = os.path.getctime(path)
-    dt = datetime.fromtimestamp(timestamp)
-    return dt.strftime("%B%Y").lower() 
+def get_file_creation(path):
+    d = None
+    try:
+        img = Image.open(path)
+        exif_data = img._getexif()
+        if not exif_data:
+                print(f"no exif data for: {path}")
+
+        for tag_id, value in exif_data.items():
+            tag = TAGS.get(tag_id, tag_id)
+            if tag == "DateTimeOriginal":
+                dt = datetime.strptime(value, "%Y:%m:%d %H:%M:%S")
+                d = dt.strftime("%B%Y").lower()
+                if d:
+                    return d
+                print(f'exif date data None for: {path}')
+    except:
+        print(f"no exif date data for: {path}")
+
+    d = None
+    try:
+        timestamp = os.path.getctime(path)
+        dt = datetime.fromtimestamp(timestamp)
+        d = dt.strftime("%B%Y").lower()
+        if d:
+            return d
+        print(f'file creatation date data None for: {path}')
+    except:
+        print(f"no creation date data for: {path}")
+
+    print(f"no date data for: {path}")
+    print(f"setting data to january1970 for: {path}")
+    return 'january1970'
+
 
 def rename_and_transfer_photos(dcim_dirs: list[Path], output_dir: Path, camera_body: str, lens: str=None):
     output_dir = Path(output_dir)

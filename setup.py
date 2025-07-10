@@ -7,7 +7,8 @@ setup(
     author="Arianna Trautmann",
     #packages=["my_project"],
     install_requires=[
-        "psutil"
+        "psutil",
+        "pillow"
     ],
     python_requires=">=3.13.5",
 )
